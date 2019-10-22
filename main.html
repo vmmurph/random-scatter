@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Random Scatter Plot</title>
+        <script src="https://d3js.org/d3.v5.min.js"></script>
+        <style>
+            svg {
+                background-color: #EADBC4;
+                border-style: solid;
+                border-width: 2px;
+                margin: 3px;
+            }
+        </style>
+    </head>
+    <body>
+        <script>
+            const margin = {
+                top: 20,
+                right: 20,
+                bottom: 30,
+                left: 30
+            }
+
+            const svg = d3.select('body').append('svg')
+            svg.attr('width', 800)
+            svg.attr('height', 500)
+
+            const g = svg.append('g')
+                .attr('transform', `translate(${margin.left}, ${margin.top})`)
+
+            const width = svg.attr('width') - margin.left - margin.right
+            const height = svg.attr('height') - margin.top - margin.bottom
+            g.append('rect').attr('x', 0).attr('y', 0).attr('width', width).attr('height', height)
+                .attr('opacity', 0)
+
+            let dataset = []
+            let randMax = 50
+            const createRandomPoint = () => {
+                const x = Math.floor(Math.random() * randMax)
+                const y = Math.floor(Math.random() * randMax)
+                const isHovered = false
+                return { x, y }
+            }
+            for (let i = 0; i < 10; i++) {
+                dataset.push(createRandomPoint())
+            }
+
+            const xScale = d3.scaleLinear().domain([0, randMax]).range([0, width])
+            const yScale = d3.scaleLinear().domain([0, randMax]).range([height, 0])
+
+            function onMouseover (d) {
+                const p = d3.select(this)
+                p.transition().duration(250)
+                    .attr('fill', 'orange').attr('r', 10)
+
+                g.append('text')
+                    .attr('class', 'label')
+                        .attr('x', xScale(d.x) + 13)
+                        .attr('y', yScale(d.y))
+                        .text(`(${d.x}, ${d.y})`)
+                        .style('font-size', 10)
+            }
+
+            function onMouseout (d) {
+                const p = d3.select(this)
+                p.transition().duration(250)
+                    .attr('fill', 'black').attr('r', 5)
+                g.selectAll('.label').remove()
+            }
+
+            function onClick () {
+                const coords = d3.mouse(this)
+                const x = Math.round(xScale.invert(coords[0]))
+                const y = Math.round(yScale.invert(coords[1]))
+                dataset.push({ x, y })
+                drawPoints()
+            }
+
+            g.on('click', onClick)
+
+            const drawPoints = () => {
+                g.selectAll('.vguide')
+                    .data(dataset).enter()
+                    .append('line')
+                        .attr('class', 'vguide')
+                        .attr('x1', d => xScale(d.x)).attr('y1', d => yScale(d.y))
+                        .attr('x2', d => xScale(d.x)).attr('y2', height)
+                        .attr('stroke', 'black').attr('stroke-width', 1)
+                        .attr('opacity', .2)
+
+                g.selectAll('.point')
+                    .data(dataset).enter()
+                    .append('circle')
+                        .attr('class', 'point')
+                        .attr('cx', d => xScale(d.x))
+                        .attr('cy', d => yScale(d.y))
+                        .attr('r', 5)
+                        .on('mouseover', onMouseover)
+                        .on('mouseout', onMouseout)
+            }
+
+            let hGuideData = []
+            for (let i = 10; i <= randMax; i += 10) {
+                hGuideData.push(i)
+            }
+            g.selectAll('.hguide')
+                .data(hGuideData).enter()
+                .append('line')
+                    .attr('class', 'hguide')
+                    .attr('x1', 0).attr('y1', d => yScale(d))
+                    .attr('x2', width).attr('y2', d => yScale(d))
+                    .attr('stroke', 'black').attr('stroke-width', 1)
+                    .attr('opacity', .1)
+
+            const xAxis = d3.axisBottom().scale(xScale)
+            const yAxis = d3.axisLeft().scale(yScale)
+            g.append('g').call(xAxis).attr('transform', `translate(0, ${height})`)
+            g.append('g').call(yAxis)
+
+            drawPoints()
+        </script>
+    </body>
+</html>
